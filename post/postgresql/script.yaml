@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-db-bak
+  namespace: postgres
+data:
+  backup.sh: |
+    #!/bin/bash
+
+    db=postgres-slave.postgres
+    datetime=`date +%Y%m%d`
+    rmtime=`date -d '+7 days ago' +%Y%m%d`
+    
+    echo "start backup shell"
+    date
+    PGPASSWORD=zxcV@123 pg_dump -U postgres -W postgres -h $db -f /bak/$datetime-backup.sql && echo "backup finish ..."
+    date

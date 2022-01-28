@@ -1,0 +1,8 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: pgadmin-transport
+  namespace: app
+spec:
+  serverName: pgadmin-svc
+  insecureSkipVerify: false

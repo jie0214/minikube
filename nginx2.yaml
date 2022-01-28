@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx2
+  namespace: app
+  labels:
+    app: nginx2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx2
+  template:
+    metadata:
+      labels:
+        app: nginx2
+    spec:
+      containers:
+        - name: nginx
+          imagePullPolicy: IfNotPresent
+          image: nginx
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx2-svc
+  namespace: app
+  labels:
+     app: nginx2
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7000
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx2

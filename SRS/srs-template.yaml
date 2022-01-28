@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srs-config
+  namespace: jie
+data:
+  srs.conf: |-
+    listen              1935;
+    max_connections     1000;
+    daemon              off;
+    http_api {
+        enabled         on;
+        listen          1985;
+    }
+    http_server {
+        enabled         on;
+        listen          8080;
+    }
+    vhost __defaultVhost__ {
+        http_remux {
+            enabled     on;
+            mount       [vhost]/[app]/[stream].flv;
+            hstrs       on;
+        }
+        hls {
+            enabled         on;
+            hls_dispose     30;
+            hls_fragment    10;
+            hls_window      60;
+        }
+    }
+    rtc_server{
+        enabled        on;
+        listen         9000;
+        candidate      34.81.241.236;
+    }
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-deployment
+  namespace: jie
+  labels:
+    app: srs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: srs
+  template:
+    metadata:
+      labels:
+        app: srs
+    spec:
+      volumes:
+      - name: config-volume
+        configMap:
+          name: srs-config
+      containers:
+      - name: srs
+        image: ossrs/srs:4
+        env:
+          - name: CANDIDATE
+            value: "34.81.241.236"
+        ports:
+        - containerPort: 1935
+        - containerPort: 1985
+        - containerPort: 8080
+        - containerPort: 9000
+        volumeMounts:
+        - name: config-volume
+          mountPath: /usr/local/srs/conf
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-service
+  namespace: jie
+spec:
+  type: LoadBalancer
+  selector:
+    app: srs
+  ports:
+  - name: srs-service-1935-1935
+    port: 1935
+    protocol: TCP
+    targetPort: 1935
+  - name: srs-service-1985-1985
+    port: 1985
+    protocol: TCP
+    targetPort: 1985
+  - name: srs-service-8080-8080
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: srs-service-9000
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+

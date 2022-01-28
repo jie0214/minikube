@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgre
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+     name: postgre
+  template:
+    metadata:
+      labels:
+        name: postgre
+    spec:
+      containers:
+        - name: postgresql
+          image: postgres
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              value: mysecretpassword
+            - name: POSTGRES_USER
+              value: postgres
+            # - name: LANG
+            #   value: "zh_CN.UTF-8"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgre-svc
+  namespace: app
+spec:
+  selector:
+    name: postgre
+  ports:
+    - name: db
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+     name: pgadmin
+  template:
+    metadata:
+      labels:
+        name: pgadmin
+    spec:
+      containers:
+        - name: pgadmin
+          image: dpage/pgadmin4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: "jie@local.com"
+            - name: PGADMIN_DEFAULT_PASSWORD
+              value: "zxcV1234"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin-svc
+  namespace: app
+spec:
+  selector:
+    name: pgadmin
+  ports:
+    - name: browser
+      port: 8080
+      targetPort: 80
+  type: ClusterIP

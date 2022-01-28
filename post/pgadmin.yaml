@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+     name: pgadmin
+  template:
+    metadata:
+      labels:
+        name: pgadmin
+    spec:
+      containers:
+        - name: pgadmin
+          image: dpage/pgadmin4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: "jie@local.com"
+            - name: PGADMIN_DEFAULT_PASSWORD
+              value: "zxcV1234"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin-svc
+  namespace: postgres
+spec:
+  selector:
+    name: pgadmin
+  ports:
+    - name: pgadmin
+      port: 8080
+      targetPort: 80
+  type: LoadBalancer

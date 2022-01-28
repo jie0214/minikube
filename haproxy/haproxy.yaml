@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: haproxy
+  namespace: service
+  labels:
+    app.kubernetes.io/instance: haproxy
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: haproxy
+    app.kubernetes.io/version: 2.5.0
+    helm.sh/chart: haproxy-1.9.0
+  annotations:
+    deployment.kubernetes.io/revision: '1'
+    meta.helm.sh/release-name: haproxy
+    meta.helm.sh/release-namespace: service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: haproxy
+      app.kubernetes.io/name: haproxy
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: haproxy
+        app.kubernetes.io/name: haproxy
+    spec:
+      volumes:
+        - name: haproxy-config
+          projected:
+            sources:
+              - configMap:
+                  name: haproxy
+            defaultMode: 420
+      containers:
+        - name: haproxy
+          image: haproxytech/haproxy-alpine:2.5.0
+          args:
+            - '-f'
+            - /usr/local/etc/haproxy/haproxy.cfg
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: https
+              containerPort: 443
+              protocol: TCP
+            - name: stat
+              containerPort: 1024
+              protocol: TCP
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: haproxy-config
+              mountPath: /usr/local/etc/haproxy/haproxy.cfg
+              subPath: haproxy.cfg
+          imagePullPolicy: IfNotPresent
+

@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-db-bak
+  namespace: postgres
+spec:
+  schedule: "0 0 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      completions: 1
+      parallelism: 1
+      template:
+        spec:
+          volumes:
+            - name : bak
+              persistentVolumeClaim:
+                claimName: bak-volume
+            - name: backup-file
+              configMap:
+                name: postgres-db-bak
+          #serviceAccount: db-svc
+          containers:
+          - name: postgres
+            image: postgres
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/bash"]
+            args: ["/data/backup.sh"]
+            ports:
+            - containerPort: 80
+            env:
+            - name: TZ
+              value: Asia/Taipei
+            resources:
+              limits:
+                cpu: 300m
+                memory: 512Mi
+              requests:
+                cpu: 200m
+                memory: 256Mi
+            volumeMounts:
+              - name: bak
+                mountPath: /bak
+              - name: backup-file
+                readOnly: true
+                mountPath: /data/backup.sh
+                subPath: backup.sh
+          restartPolicy: Never

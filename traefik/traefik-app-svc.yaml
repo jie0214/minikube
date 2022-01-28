@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-pgadmin
+  namespace: app
+  labels:
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: traefik
+    helm.sh/chart: traefik-10.9.1
+spec:
+  ports:
+    - name: pgadmin
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+  selector:
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/name: traefik
+  type: ClusterIP

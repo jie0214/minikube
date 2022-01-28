@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: postgres
+  name: busybox
+  labels:
+    name: busybox
+spec:
+  volumes:
+    - name : bak
+      persistentVolumeClaim:
+        claimName: bak-volume
+  containers:
+  - image: busybox:1.28
+    command:
+      - sleep
+      - "36000"
+    name: busybox
+    volumeMounts:
+      - name: bak
+        mountPath: /bak
+    

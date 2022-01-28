@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: traefik-nginx
+  namespace: app
+spec:
+  entryPoints:
+    - nginx
+
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: nginx-svc
+          port: 5000

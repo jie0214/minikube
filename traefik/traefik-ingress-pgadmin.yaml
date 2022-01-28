@@ -1,0 +1,36 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  labels:
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: traefik
+    helm.sh/chart: traefik-10.9.1
+  name: traefik-pgadmin
+  namespace: app
+spec:
+  entryPoints:
+    - traefik
+
+  routes:
+    - match: PathPrefix(`/pgadmin`)
+      kind: Rule
+      services:
+        - kind: Service
+          name: pgadmin-svc
+          namespace: app
+          passHostHeader: true
+          port: 10000
+          
+# ---
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: TraefikService
+# metadata:
+#   name: pgadmin
+#   namespace: app
+# spec:
+#   weighted:
+#     services:
+#       - name: pgadmin-svc
+#         port: 10000
+#         weight: 1
