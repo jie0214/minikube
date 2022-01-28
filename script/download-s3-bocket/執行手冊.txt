@@ -1,0 +1,31 @@
+1. 開啟PowerShell
+2. cd至執行腳本目錄
+3. 執行腳本 .\start.ps1 [遊戲] [主機名]
+
+[遊戲]
+v1 : 一代
+v2 : 二代
+
+[主機名]
+S199 : 一代
+S200 : 一代
+DB-GameSystem : 二代
+DB-PointCenter : 二代
+DB-SyncSystem : 二代
+
+
+範例1 : 在主機 S200 下載S3 Bocket檔案
+.\start.ps1 v1 S200
+
+範例2 : 在主機 DB-PointCenter 下載S3 Bocket檔案
+.\start.ps1 v2 DB-PointCenter
+
+
+
+備註：DBList有所有主機目錄清單
+
+
+---------------------------------
+
+1. checkFile.ps1 為確認檔案數量腳本
+2. download.ps1 為start.ps1下載腳本，請勿直接執行

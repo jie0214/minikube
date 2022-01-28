@@ -1,0 +1,53 @@
+﻿#Invoke-RestMethod : 要求已經中止: 無法建立 SSL/TLS 的安全通道
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+##今日
+$today = Get-Date -format "yyyy-MM-dd"
+## 昨日
+$dd = -1
+$yesterday = (Get-Date).AddDays($dd).ToString('yyyy-MM-dd')
+
+#aws s3 sync C:\workspace\test s3://ecg-db-bucket/
+##Slack
+$Webhook = "https://hooks.slack.com/services/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"
+$ContentType= 'application/json'
+
+$template = @"
+    {
+        "channel": "test-slack",
+        "username": "AWS Bot",
+        "text": "Upload: Status \nTime: DATETIME \nDB: Host \nH1DayCur3_Full: Count1 \nH1KSDB_Full: Count2 \nH1LogDB_Full: Count3 \nH1MobileDB_Full: Count4 \nH1Mon_Full: Count5 \nH1MonCur_Full: Count6 \nH1DayCur3_trn: Count7",
+        "icon_emoji":":ghost:"
+    }
+"@
+##檢查S3檔案
+$upFile = aws s3 ls s3://v1-db-backup/S200/H1MonCur/ |findstr $yesterday |findstr Full.bak
+
+$H1DayCur3 = (aws s3 ls s3://v1-db-backup/S200/H1DayCur3/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+$H1DayCur3trn = (aws s3 ls s3://v1-db-backup/S200/H1DayCur3/ |findstr "$yesterday" |findstr .trn |Measure-Object).Count
+
+$H1KSDB = (aws s3 ls s3://v1-db-backup/S200/H1KSDB/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+
+
+$H1LogDB = (aws s3 ls s3://v1-db-backup/S200/H1LogDB/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+
+$H1MobileDB = (aws s3 ls s3://v1-db-backup/S200/H1MobileDB/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+
+$H1Mon = (aws s3 ls s3://v1-db-backup/S200/H1Mon/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+
+$H1MonCur = (aws s3 ls s3://v1-db-backup/S200/H1MonCur/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+
+##CheckFile to Slack
+#Write-Output $upFile
+if ($upFile -match $yesterday)
+{
+Write-Output "upload success"
+$body=$template.Replace("Host", "S200").Replace("Count1", $H1DayCur3).Replace("Count2", $H1KSDB).Replace("Count3", $H1LogDB).Replace("Count4", $H1MobileDB).Replace("Count5", $H1Mon).Replace("Count6", $H1MonCur).Replace("Count7", $H1DayCur3trn).Replace("Status","Success").Replace("DATETIME",$yesterday).Replace("CHANNELNAME","$ChannelName")
+#Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType
+}
+else
+{
+Write-Output "upload Failed"
+$body=$template.Replace("Host", "S200").Replace("Count1", $H1DayCur3).Replace("Count2", $H1KSDB).Replace("Count3", $H1LogDB).Replace("Count4", $H1MobileDB).Replace("Count5", $H1Mon).Replace("Count6", $H1MonCur).Replace("Count7", $H1DayCur3trn).Replace("Status","Failed").Replace("DATETIME",$yesterday).Replace("CHANNELNAME","$ChannelName")
+#Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType
+}
+Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType

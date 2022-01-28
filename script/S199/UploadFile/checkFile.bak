@@ -1,0 +1,47 @@
+﻿#Invoke-RestMethod : 要求已經中止: 無法建立 SSL/TLS 的安全通道
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+##今日
+$today = Get-Date -format "yyyy-MM-dd"
+## 昨日
+$dd = -1
+$yesterday = (Get-Date).AddDays($dd).ToString('yyyy-MM-dd')
+#Write-Output $today
+##檢查S3檔案
+$upFile = aws s3 ls s3://v1-db-backup/S199/H1DayCur/ |findstr "$yesterday" |findstr Full.bak
+$H1Daytrn = (aws s3 ls s3://v1-db-backup/S199/H1Day/ |findstr "$yesterday" |findstr .trn |Measure-Object).Count
+$H1DayCurtrn = (aws s3 ls s3://v1-db-backup/S199/H1DayCur/ |findstr "$yesterday" |findstr .trn |Measure-Object).Count
+#$CCC = aws s3 ls s3://v1-db-backup/S199/H1Day/ |findstr "HKNetGame_HJ_$today" |findstr Full.bak |Measure-Object
+#$fullbak = $CCC.Count
+#Write-Output $fullbak
+##Slack
+$Webhook = "https://hooks.slack.com/services/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"
+$ContentType= 'application/json'
+$template = @"
+     {
+         "channel": "test-slack",
+         "username": "AWS Bot",
+         "text": "Upload: Status \nTime: DATETIME \nDB: Host \nH1Day_full: Count1 \nH1DayCur_full: Count2 \nH1Day_trn: Count3 \nH1DayCur_trn: Count4",
+         "icon_emoji": ":ghost:"
+     }
+"@
+
+$checkfileday = (aws s3 ls s3://v1-db-backup/S199/H1Day/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+#$FileDay = $checkfileday.Count
+$checkFileCur = (aws s3 ls s3://v1-db-backup/S199/H1DayCur/ |findstr "$yesterday" |findstr .bak |Measure-Object).Count
+#$FileCur = $checkFileCur.Count
+##CheckFile to Slack
+#Write-Output $upFile
+if ($upFile -match $yesterday)
+{
+Write-Output "upload success"
+$body=$template.Replace("Host", "S199").Replace("Count1", $checkfileday).Replace("Count2", $checkFileCur).Replace("Count3", $H1Daytrn).Replace("Count4", $H1DayCurtrn).Replace("Status", "Success").Replace("DATETIME",$yesterday).Replace("CHANNELNAME","$ChannelName")
+#Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType
+}
+else
+{
+Write-Output "Failed"
+#Send-SlackMessage -Uri https://hooks.slack.com/services/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 -Text 'testing'
+$body=$template.Replace("Host", "S199").Replace("Count1", $checkfileday).Replace("Count2", $checkFileCur).Replace("Count3", $H1Daytrn).Replace("Count4", $H1DayCurtrn).Replace("Status", "Failed").Replace("DATETIME",$yesterday).Replace("CHANNELNAME","$ChannelName")
+#Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType
+}
+Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType

@@ -1,0 +1,101 @@
+﻿#Invoke-RestMethod : 要求已經中止: 無法建立 SSL/TLS 的安全通道
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$today = Get-Date -Format "yyyy-MM-dd-HH-mm"
+$dd = -1
+$yesterday = (Get-Date).AddDays($dd).ToString('yyyy-MM-dd')
+#Slack
+
+$Webhook = "https://hooks.slack.com/services/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"
+$ContentType= 'application/json'
+#$file = Get-Content D:\UploadFile\template.txt
+
+#$template = Get-Content -Raw D:\UploadFile\template.json | Out-String | ConvertFrom-Json
+
+$template = @"
+    {
+        "channel": "test-slack",
+        "username": "AWS Bot",
+        "text": "Status: UPLOAD \nTime: DATE \nHostName: TARGET \n------------------------------ \nFull_Bak: FBAK \nLog: TRN",
+        "icon_emoji":":aws_icon:"
+
+    }
+"@
+
+$Bak = [System.Collections.Generic.List[string]]::new()
+$Trn = [System.Collections.Generic.List[string]]::new()
+$BakTotel = [System.Collections.Generic.List[string]]::new()
+$TrnTotel = [System.Collections.Generic.List[string]]::new()
+$s = $args[1]
+$bakCon = 0
+if ($args[0] -match "v1"){
+    foreach ($i in (Get-Content D:\UploadFile\DBList\$s.txt)){
+        $aws = (aws s3 ls s3://v1-db-backup/$s/$i/ |findstr "$yesterday" |findstr .bak).Count
+        $Count = 0
+        $TrnCount = 0
+        if ($aws -eq 0){
+            foreach ($a in (Get-Content D:\UploadFile\DBList\$s.txt)){
+                $upTrn = (aws s3 ls s3://v1-db-backup/$s/$a/ |findstr "$yesterday" |findstr .trn).Count
+                $upBak = (aws s3 ls s3://v1-db-backup/$s/$a/ |findstr "$yesterday" |findstr .bak).Count
+                $Count = $Count + $upBak
+                $TrnCount = $TrnCount + $upTrn
+                $body = $template.Replace("UPLOAD","$i Full_Backup Upload Failed").Replace("DATE",$yesterday).Replace("TARGET",$s).Replace("FBAK", $Count).Replace("TRN", $TrnCount)
+                Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType
+            } 
+        }
+        else{
+            $bakCon = $bakCon + $aws
+            $BakTotel.Add($bakCon)
+            $upTrn = (aws s3 ls s3://v1-db-backup/$s/$i/ |findstr "$yesterday" |findstr .trn).Count
+            $Succ = Write-Output "$s / $i / :Full Backup Upload Success_Totel= $aws"
+            $Bak.Add($Succ)
+            if ($upTrn -ne 0 ){
+                $trnCon = $trnCon + $upTrn
+                $trnSucc = Write-Output "$s / $i / :Trn_Log Backup Upload Success_Totel= $upTrn"
+                $Trn.Add($trnSucc)
+                $TrnTotel.Add($trnCon)
+            }
+        }
+    }
+}
+elseif ($args[0] -match 'v2'){
+    foreach ($i in (Get-Content D:\UploadFile\DBList\$s.txt)){
+        $aws = (aws s3 ls s3://v2-db-backup/$s/$i/ |findstr "$yesterday" |findstr .bak).Count
+        $Count = 0
+        $TrnCount = 0
+        if ($aws -eq 0){
+            foreach ($a in (Get-Content D:\UploadFile\DBList\$s.txt)){
+                $upTrn = (aws s3 ls s3://v2-db-backup/$s/$a/ |findstr "$yesterday" |findstr .trn).Count
+                $upBak = (aws s3 ls s3://v2-db-backup/$s/$a/ |findstr "$yesterday" |findstr .bak).Count
+                $Count = $Count + $upBak
+                $TrnCount = $TrnCount + $upTrn
+                $body = $template.Replace("UPLOAD","$i Full_Backup Upload Failed").Replace("DATE",$yesterday).Replace("TARGET",$s).Replace("FBAK", $Count).Replace("TRN", $TrnCount)
+                Invoke-RestMethod -uri $Webhook -Method Post -body $body -ContentType $ContentType
+            } 
+        }
+        else{
+            $bakCon = $bakCon + $aws
+            $BakTotel.Add($bakCon)
+            $upTrn = (aws s3 ls s3://v2-db-backup/$s/$i/ |findstr "$yesterday" |findstr .trn).Count
+            $Succ = Write-Output "$s / $i / :Full Backup Upload Success_Totel= $aws"
+            $Bak.Add($Succ)
+            if ($upTrn -ne 0 ){
+                $trnCon = $trnCon + $upTrn
+                $trnSucc = Write-Output "$s / $i / :Trn_Log Backup Upload Success_Totel= $upTrn"
+                $Trn.Add($trnSucc)
+                $TrnTotel.Add($trnCon)
+            }
+        }
+    }
+}
+else {
+    echo "Enter Error"
+    break
+    Write-Output $today "Enter Error" >> D:\UploadFile\UploadLog.txt
+}
+Write-Output "-----------------------------< $today  >----------------------------------" >> D:\UploadFile\FullBakLog.txt
+$Bak >> D:\UploadFile\FullBakLog.txt
+$Trn >> D:\UploadFile\FullBakLog.txt
+$BakTotel[-1]
+$TrnTotel[-1]
+$sbody = $template.Replace("UPLOAD","Full_Backup Upload Success").Replace("DATE",$yesterday).Replace("TARGET",$s).Replace("FBAK", $BakTotel[-1]).Replace("TRN", $TrnTotel[-1])
+Invoke-RestMethod -uri $Webhook -Method Post -body $sbody -ContentType $ContentType
